@@ -4,11 +4,10 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io # wich registry do you want to use ?
-  NAMESPACE: ${{github.repository }} # wich namespace do you want to use ? what is ${{github.repository }} ? => renvoie une string vers le nom du repo
-  PLATFORM: linux/amd64 # wich platform do you want to use ? linux/amd64, linux/arm64, linux/arm/v7, linux/arm/v6
-  TAG: 1 # wich tag do you want to use ?
-
+  REGISTRY: ghcr.io # wich registry do you want to use ? docker.io, ghcr.io, ...
+  NAMESPACE: ${{github.repository}}
+  PLATFORM: linux/amd64
+  TAG: v1.0.0
 
 jobs:
   docker:
@@ -27,13 +26,22 @@ jobs:
         uses: docker/login-action@v2 # Follow the link to read more about this action
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ SylvineDurand }}
+          username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }} # What is this GITHUB_TOKEN ? Why is it working here ?
           logout: true
+
+      - name: Lowercase the namespace
+        run: |
+          echo "NAMESPACE_LOWER=$(echo ${{env.NAMESPACE}} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          
+
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
           file: packages/streamlit/Dockerfile
+          context: packages/streamlit
           platforms: ${{ env.PLATFORM }}
           push: true
-          tags: "${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.TAG }}"
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.NAMESPACE_LOWER }}/streamlit:${{ env.TAG }}
+            ${{ env.REGISTRY }}/${{ env.NAMESPACE_LOWER }}/streamlit:latest
